@@ -1,4 +1,4 @@
-__cc_find(ffmpeglib)
+__cc_find(fmpeg)
 if(NOT TARGET Qt5::Core)
 	__enable_qt5()
 endif()
