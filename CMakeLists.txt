@@ -1,6 +1,6 @@
 __cc_find(ffmpeglib)
 if(NOT TARGET Qt5::Core)
-	__prepare_core_qt5()
+	__enable_qt5()
 endif()
 
 set(SRCS interface/cxffmpeg/interface.h
