@@ -1,3 +1,8 @@
+__cc_find(ffmpeglib)
+if(NOT TARGET Qt5::Core)
+	__prepare_core_qt5()
+endif()
+
 set(SRCS interface/cxffmpeg/interface.h
 		 interface/cxffmpeg/qmlplayer.h
 		 impl/qmlplayer.cpp
