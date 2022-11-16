@@ -17,7 +17,7 @@ extern "C"
 #include <QContiguousCache>
 #include <QThread>
 #include <QObject>
-
+#include <QImage>
 
 class VideoDecoder : public QObject
 {
@@ -25,30 +25,25 @@ class VideoDecoder : public QObject
 public:
     void stopplay();
 
-public slots:
-    void init();
-    void uninit();
-    void load(const QString& file);
+    void startPlay(const QString& file);
     
 signals:
     void videoInfoReady(int width, int height, int format);
-    void videoFrameDataReady(unsigned char* data, int width, int height);
+    void videoFrameDataReady(QImage data);
     void videoFrameDataFinish();
 protected:
-    void demuxing();
-    void decodeFrame();
     void readframe();
 private:
     AVFormatContext* m_fmtCtx = nullptr;
     AVCodecContext* m_videoCodecCtx = nullptr;
     AVStream* m_videoStream = nullptr;
     AVFrame* m_frame = nullptr;
-    AVPacket m_packet;
+    AVPacket* m_packet = nullptr;
     int m_videoStreamIndex = 0;
 
     AVPixelFormat m_pixFmt;
     int m_width, m_height;
-    bool isStop;
+    bool isStop = false;
 };
 
 class VideoDecoderController : public QObject
@@ -58,23 +53,21 @@ public:
     VideoDecoderController(QObject* parent = nullptr);
     ~VideoDecoderController();
 
-    void startThread();
+    void startThread(const QString& serverAddress);
     void stopThread();
     void stopplay();
 
 signals:
-    void init();
-    void uninit();
-    void pause(bool);
-    void load(const QString& file);
 
     void videoInfoReady(int width, int height, int format);
-    void videoFrameDataReady(unsigned char* data, int width, int height);
+    void videoFrameDataReady(QImage data);
+
+public slots:
     void videoFrameDataFinish();
+    void onVideoFrameDataReady(QImage data);
 
 private:
     VideoDecoder* m_decoder = nullptr;
-    QThread m_thread;
 };
 
 #endif // ! PLAYER_FFMPEG_VIDEO_DECODER_H_

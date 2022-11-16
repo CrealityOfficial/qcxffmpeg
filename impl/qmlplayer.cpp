@@ -11,6 +11,7 @@ QMLPlayer::QMLPlayer(QQuickItem *parent)
     connect(m_decoderController, &VideoDecoderController::videoFrameDataReady, this, &QMLPlayer::onVideoFrameDataReady);
     connect(m_decoderController, &VideoDecoderController::videoFrameDataFinish, this, &QMLPlayer::onVideoFrameDataFinish);
     m_linkState = false;
+    m_timer = new QTimer(this);
 }
 
 QMLPlayer::~QMLPlayer()
@@ -19,7 +20,7 @@ QMLPlayer::~QMLPlayer()
     {
         delete m_decoderController;
     }
-    
+    m_timer->stop();
 }
 
 void QMLPlayer::paint(QPainter *painter)
@@ -84,9 +85,9 @@ void QMLPlayer::paint(QPainter *painter)
     }
 }
 
-void QMLPlayer::rowVideoData(unsigned char *data, int width, int height)
+void QMLPlayer::rowVideoData(QImage data)
 {
-    image = QImage(data, width, height, QImage::Format_RGB888);
+    image = data;
 }
 
 void QMLPlayer::rowAudioData(unsigned char *data, unsigned int size)
@@ -106,25 +107,11 @@ void QMLPlayer::setUrl(const QString &value)
 
 void QMLPlayer::start(QString urlStr)
 {
-    QTimer* timer = new QTimer(this);
-    timer->setInterval(40);
-    connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-    timer->start();
+    m_timer->setInterval(40);
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
+    m_timer->start();
 
-    QAudioFormat format;
-    // Set up the format, eg.
-    format.setSampleRate(48000);
-    format.setChannelCount(2);
-    format.setSampleSize(16);
-    format.setCodec("audio/pcm");
-    format.setByteOrder(QAudioFormat::LittleEndian);
-    format.setSampleType(QAudioFormat::UnSignedInt);
-
-    QAudioOutput *audio_output = new QAudioOutput(format,this);
-    audioOutputIO = (audio_output)->start();
-    int size = audio_output->periodSize();
-    emit m_decoderController->load(urlStr);
-
+    m_decoderController->startThread(urlStr);
 }
 
 void QMLPlayer::stop()
@@ -133,10 +120,10 @@ void QMLPlayer::stop()
     m_decoderController->stopplay();
 }
 
-void QMLPlayer::onVideoFrameDataReady(unsigned char* data, int width, int height)
+void QMLPlayer::onVideoFrameDataReady(QImage data)
 {
     //qDebug() << "onVideoFrameDataReady data.width:"<< width << " data.height:"<< height;
-    rowVideoData(data, width, height);
+    rowVideoData(data);
     m_linkState = true;
 
     emit sigVideoFrameDataReady();

@@ -22,11 +22,11 @@ public:
 
 private:
     void paint(QPainter *painter) override;
-    void rowVideoData(unsigned char *data, int width, int height);
+    void rowVideoData(QImage data);
     void rowAudioData(unsigned char *data, unsigned int size);
 
 protected slots:
-    void onVideoFrameDataReady(unsigned char* data, int width, int height);
+    void onVideoFrameDataReady(QImage data);
     void onVideoFrameDataFinish();
 
 signals:
@@ -38,6 +38,7 @@ private:
     QIODevice *audioOutputIO;
     VideoDecoderController* m_decoderController;
     bool m_linkState;
+    QTimer* m_timer = nullptr;
 };
 
 #endif // QMLPLAYER_H
