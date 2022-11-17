@@ -23,19 +23,17 @@ public:
 private:
     void paint(QPainter *painter) override;
     void rowVideoData(QImage data);
-    void rowAudioData(unsigned char *data, unsigned int size);
 
 protected slots:
-    void onVideoFrameDataReady(QImage data);
+    void onVideoFrameDataReady(QString url, QImage data);
     void onVideoFrameDataFinish();
 
 signals:
     void sigVideoFrameDataReady();
 
 private:
-    QImage image;
-    QString url;
-    QIODevice *audioOutputIO;
+    QImage m_image;
+    QString m_url;
     VideoDecoderController* m_decoderController;
     bool m_linkState;
     QTimer* m_timer = nullptr;

@@ -25,10 +25,10 @@ QMLPlayer::~QMLPlayer()
 
 void QMLPlayer::paint(QPainter *painter)
 {
-    if (!image.isNull())
+    if (!m_image.isNull())
     {
-        int imageH = image.height();
-        int imageW = image.width();
+        int imageH = m_image.height();
+        int imageW = m_image.width();
         int screenH = this->height();
         int screenW = this->width();
 
@@ -73,40 +73,36 @@ void QMLPlayer::paint(QPainter *painter)
         }
 
 
-        QImage img = image.scaled(scaledW, scaledH);
+        QImage img = m_image.scaled(scaledW, scaledH);
         painter->drawImage(QPoint(offsetX, offsetY), img);
     }
     else
     {
-        image = QImage(this->width(), this->height(), QImage::Format_RGB888);
-        image.fill(QColor(0.0, 0.0, 0.0));
-        QImage img = image.scaled(this->width(), this->height());
+        m_image = QImage(this->width(), this->height(), QImage::Format_RGB888);
+        m_image.fill(QColor(0.0, 0.0, 0.0));
+        QImage img = m_image.scaled(this->width(), this->height());
         painter->drawImage(QPoint(0, 0), img);
     }
 }
 
 void QMLPlayer::rowVideoData(QImage data)
 {
-    image = data;
-}
-
-void QMLPlayer::rowAudioData(unsigned char *data, unsigned int size)
-{
-    audioOutputIO->write((const char *)data,size);
+    m_image = data;
 }
 
 QString QMLPlayer::getUrl() const
 {
-    return url;
+    return m_url;
 }
 
 void QMLPlayer::setUrl(const QString &value)
 {
-    url = value;
+    m_url = value;
 }
 
 void QMLPlayer::start(QString urlStr)
 {
+    setUrl(urlStr);
     m_timer->setInterval(40);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
     m_timer->start();
@@ -117,11 +113,16 @@ void QMLPlayer::start(QString urlStr)
 void QMLPlayer::stop()
 {
     qDebug() << "QMLPlayer::stop()";
-    m_decoderController->stopplay();
+    //m_decoderController->stopplay();
+    m_image = QImage();
 }
 
-void QMLPlayer::onVideoFrameDataReady(QImage data)
+void QMLPlayer::onVideoFrameDataReady(QString url, QImage data)
 {
+    if (url != m_url)
+    {
+        return;
+    }
     //qDebug() << "onVideoFrameDataReady data.width:"<< width << " data.height:"<< height;
     rowVideoData(data);
     m_linkState = true;
@@ -133,7 +134,7 @@ void QMLPlayer::onVideoFrameDataFinish()
 {
     for (int i = 0; i < 10; i++)
     {
-        image.fill(QColor(0.0, 0.0, 0.0));
+        m_image.fill(QColor(0.0, 0.0, 0.0));
     }
 }
 

@@ -25,14 +25,12 @@ class VideoDecoder : public QObject
 public:
     void stopplay();
 
-    void startPlay(const QString& file);
+    void startPlay(const QString& strUrl);
     
 signals:
-    void videoInfoReady(int width, int height, int format);
-    void videoFrameDataReady(QImage data);
-    void videoFrameDataFinish();
-protected:
-    void readframe();
+    void videoFrameDataReady(QString url, QImage data);
+    void videoFrameDataFinish(QString url);
+
 private:
     AVFormatContext* m_fmtCtx = nullptr;
     AVCodecContext* m_videoCodecCtx = nullptr;
@@ -55,19 +53,17 @@ public:
 
     void startThread(const QString& serverAddress);
     void stopThread();
-    void stopplay();
 
 signals:
 
-    void videoInfoReady(int width, int height, int format);
-    void videoFrameDataReady(QImage data);
+    void videoFrameDataReady(QString url, QImage data);
 
 public slots:
-    void videoFrameDataFinish();
-    void onVideoFrameDataReady(QImage data);
+    void videoFrameDataFinish(QString url);
+    void onVideoFrameDataReady(QString url, QImage data);
 
 private:
-    VideoDecoder* m_decoder = nullptr;
+    std::map<QString, VideoDecoder*> m_decoders;
 };
 
 #endif // ! PLAYER_FFMPEG_VIDEO_DECODER_H_
