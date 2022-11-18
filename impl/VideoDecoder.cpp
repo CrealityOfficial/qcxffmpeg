@@ -24,6 +24,7 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	av_init_packet(&pkt);                                                       // initialize packet.
 	pkt.data = NULL;
 	pkt.size = 0;
+	bool bStart = false;
 	AVStream* pVst;
 	uint8_t* buffer_rgb = NULL;
 	AVCodecContext* pVideoCodecCtx = NULL;
@@ -63,19 +64,23 @@ void VideoDecoder::startPlay(const QString& strUrl)
 		do {
 			ret = av_read_frame(ifmt_ctx, &pkt);                                // read frames
 			//decode stream
-			pVst = ifmt_ctx->streams[video_st_index];
+			if (!bStart)
+			{
+				pVst = ifmt_ctx->streams[video_st_index];
 
-			pVideoCodecPar = pVst->codecpar;
+				pVideoCodecPar = pVst->codecpar;
 
-			pVideoCodecCtx = avcodec_alloc_context3(pVideoCodec);
-			avcodec_parameters_to_context(pVideoCodecCtx, pVideoCodecPar);
+				pVideoCodecCtx = avcodec_alloc_context3(pVideoCodec);
+				avcodec_parameters_to_context(pVideoCodecCtx, pVideoCodecPar);
 
-			pVideoCodec = avcodec_find_decoder(pVideoCodecCtx->codec_id);
-			if (pVideoCodec == NULL)
-				return;
+				pVideoCodec = avcodec_find_decoder(pVideoCodecCtx->codec_id);
+				if (pVideoCodec == NULL)
+					return;
 
-			if (avcodec_open2(pVideoCodecCtx, pVideoCodec, NULL) < 0)
-				return;
+				if (avcodec_open2(pVideoCodecCtx, pVideoCodec, NULL) < 0)
+					return;
+				bStart = true;
+			}
 
 			if (pkt.stream_index == video_st_index)
 			{
@@ -127,7 +132,6 @@ void VideoDecoder::startPlay(const QString& strUrl)
 
 					sws_freeContext(img_convert_ctx);
 					//av_free(buffer_rgb);
-					std::this_thread::sleep_for(std::chrono::milliseconds(5));
 				}
 			}
 
