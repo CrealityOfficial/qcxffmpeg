@@ -14,7 +14,7 @@ public:
     ~QMLPlayer();
 
     QString getUrl() const;
-    void setUrl(const QString &value);
+    Q_INVOKABLE void setUrl(const QString &value);
 
     Q_INVOKABLE void start(QString urlStr);
     Q_INVOKABLE void stop();
