@@ -31,7 +31,6 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	AVCodecParameters* pVideoCodecPar = NULL;
 	AVFrame* pFrame = av_frame_alloc();
 	AVFrame* pFrameRGB = av_frame_alloc();
-	int got_picture;
 	SwsContext* img_convert_ctx = NULL;
 	AVCodec* pVideoCodec = NULL;
 
@@ -85,16 +84,24 @@ void VideoDecoder::startPlay(const QString& strUrl)
 			if (pkt.stream_index == video_st_index)
 			{
 				int av_result = avcodec_send_packet(pVideoCodecCtx, &pkt);
-				got_picture = avcodec_receive_frame(pVideoCodecCtx, pFrame);
-				if (got_picture)
+				ret = avcodec_receive_frame(pVideoCodecCtx, pFrame);
+				if (ret)
 				{
+					if (ret != AVERROR(EAGAIN))
+					{
+						avcodec_free_context(&pVideoCodecCtx);
+						av_packet_unref(&pkt);
+						bStart = false;
+						ret = AVERROR(EAGAIN);
+					}
+					continue;
 				}
 
 				if (av_result < 0)
 				{
 					return;
 				}
-				if (got_picture == 0)
+				if (ret == 0)
 				{
 					int bytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, pVideoCodecCtx->width, pVideoCodecCtx->height, 1);
 					buffer_rgb = (uint8_t*)av_malloc(bytes);
