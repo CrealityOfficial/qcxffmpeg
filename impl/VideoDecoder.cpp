@@ -20,6 +20,7 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	AVDictionary* optionsDict = NULL;
 	av_dict_set(&optionsDict, "rtsp_transport", "tcp", 0);                //����tcp����	,,��������������Щrtsp���ͻῨ��
 	av_dict_set(&optionsDict, "stimeout", "2000000", 0);                  //���û������stimeout
+	av_dict_set(&optionsDict, "buffer_size", "10*1024*1024", 0);
 
 	av_init_packet(&pkt);                                                       // initialize packet.
 	pkt.data = NULL;
@@ -62,6 +63,14 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	{
 		do {
 			ret = av_read_frame(ifmt_ctx, &pkt);                                // read frames
+			if ((ret == AVERROR_EOF))
+			{
+				avformat_close_input(&ifmt_ctx);
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				ret = avformat_open_input(&ifmt_ctx, url.c_str(), 0, &optionsDict);
+				ret = AVERROR(EAGAIN);
+				continue;
+			}
 			//decode stream
 			if (!bStart)
 			{
