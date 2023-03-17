@@ -66,8 +66,10 @@ void VideoDecoder::startPlay(const QString& strUrl)
 			if ((ret == AVERROR_EOF))
 			{
 				avformat_close_input(&ifmt_ctx);
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
-				ret = avformat_open_input(&ifmt_ctx, url.c_str(), 0, &optionsDict);
+				while (avformat_open_input(&ifmt_ctx, url.c_str(), 0, &optionsDict))
+				{
+					std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				}
 				ret = AVERROR(EAGAIN);
 				continue;
 			}
