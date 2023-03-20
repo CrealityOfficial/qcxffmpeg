@@ -12,7 +12,7 @@ set(SRCS interface/cxffmpeg/interface.h
 		 
 set(DEFS PLAYER_FFMPEG_DLL)	
 set(INCS ${CMAKE_CURRENT_SOURCE_DIR}/impl/ ${CMAKE_CURRENT_SOURCE_DIR}/interface)
-set(LIBS Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Quick Qt5::Multimedia avutil avcodec avformat swscale)
+set(LIBS Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Quick Qt5::Multimedia avutil avcodec avformat swscale swresample)
 
 find_package(Qt5 COMPONENTS Multimedia REQUIRED)
 __add_real_target(qcxffmpeg dll SOURCE ${SRCS}
