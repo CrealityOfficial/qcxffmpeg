@@ -63,7 +63,7 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	{
 		do {
 			ret = av_read_frame(ifmt_ctx, &pkt);                                // read frames
-			if ((ret == AVERROR_EOF))
+			if (ret < 0)
 			{
 				avformat_close_input(&ifmt_ctx);
 				while (avformat_open_input(&ifmt_ctx, url.c_str(), 0, &optionsDict))
