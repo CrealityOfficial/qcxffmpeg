@@ -210,6 +210,10 @@ void VideoDecoderController::startThread(const QString& serverAddress)
 
 void VideoDecoderController::stopThread()
 {
+	for (auto item : m_decoders)
+	{
+		item.second->stopplay();
+	}
 }
 
 void VideoDecoderController::onVideoFrameDataReady(QString url, QImage data)
