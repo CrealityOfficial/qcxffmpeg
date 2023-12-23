@@ -5,5 +5,5 @@ repository: http://172.20.180.12:8050/yanfa4/corelib/qcxffmpeg
 external_repository: http://172.20.180.12:8050/CrealityOfficial/qcxffmpeg
 description: qcxchart
 topics: qcxchart,qcxchart
-build_deps: ffmpeg/0.0.2
+build_deps: ffmpeglib/0.0.2
 search_deps: 
