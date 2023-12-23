@@ -1,6 +1,7 @@
 ﻿#include "VideoDecoder.h"
 #include <QDebug>
 #include <QImage>
+#include <thread>
 
 void VideoDecoder::stopplay()
 {
