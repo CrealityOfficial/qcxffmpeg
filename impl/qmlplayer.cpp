@@ -3,7 +3,7 @@
 #include <QTimer>
 #include <QAudioOutput>
 #include "VideoDecoder.h"
-
+#include "WebRTCDecoder.h"
 QMLPlayer::QMLPlayer(QQuickItem *parent)
     :QQuickPaintedItem(parent)
 {
@@ -19,6 +19,10 @@ QMLPlayer::~QMLPlayer()
     if (m_decoderController)
     {
         delete m_decoderController;
+    }
+    if (m_webrtc_decoder)
+    {
+        delete m_webrtc_decoder;
     }
     m_timer->stop();
 }
@@ -106,8 +110,19 @@ void QMLPlayer::start(QString urlStr)
     m_timer->setInterval(40);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
     m_timer->start();
-
-    m_decoderController->startThread(urlStr);
+    if (urlStr.indexOf("webrtc") == 0)
+    {
+        if (!m_webrtc_decoder)
+        {
+            m_webrtc_decoder = new WebRTCDecoder();
+            connect(m_webrtc_decoder, &WebRTCDecoder::videoFrameDataReady, this, &QMLPlayer::onVideoFrameDataReady);
+        }
+        m_webrtc_decoder->startPlay(urlStr);
+    }
+    else {
+        m_decoderController->startThread(urlStr);
+    }
+    
 }
 
 void QMLPlayer::stop()
@@ -115,6 +130,10 @@ void QMLPlayer::stop()
     qDebug() << "QMLPlayer::stop()";
     //m_decoderController->stopplay();
     m_decoderController->stopThread();
+    if (m_webrtc_decoder)
+    {
+        m_webrtc_decoder->stopplay();
+    }
     //m_image = QImage();
 }
 

@@ -4,7 +4,7 @@
 #include <QQuickPaintedItem>
 #include <QImage>
 #include "cxffmpeg/interface.h"
-
+class WebRTCDecoder;
 class VideoDecoderController;
 class PLAYER_FFMPEG_API QMLPlayer : public QQuickPaintedItem
 {
@@ -35,6 +35,8 @@ private:
     QImage m_image;
     QString m_url;
     VideoDecoderController* m_decoderController;
+    WebRTCDecoder *m_webrtc_decoder=nullptr;
+
     bool m_linkState;
     QTimer* m_timer = nullptr;
 };
