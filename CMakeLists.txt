@@ -1,4 +1,6 @@
 __cc_find(ffmpeglib)
+__cc_find(metartc)
+__assert_target(metartc6)
 if(NOT TARGET Qt5::Core)
 	__enable_qt5()
 endif()
