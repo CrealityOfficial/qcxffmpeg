@@ -37,17 +37,17 @@ void WebRTCDecoder::stopplay()
 void WebRTCDecoder::startPlay(const QString& strUrl)
 {
     m_url = strUrl;
-    QString url = "http://172.23.208.238:8000/call/demo";
+    //QString url = "http://172.23.208.238:8000/call/demo";
     m_context->synMgr.session->playBuffer->resetVideoClock(m_context->synMgr.session->playBuffer->session);
-    int32_t err = m_player->playRtc(0,url.toLatin1().data());
+    int32_t err = m_player->playRtc(0, m_url.toLatin1().data());
     if (!err)
     {
         QtConcurrent::run([this]() {
-            QThread::msleep(1000);
+            //QThread::msleep(1000);
             while (!this->isStop())
             {
                 this->getRenderData();
-                QThread::msleep(5);
+                QThread::msleep(2);
             }
             
             });
@@ -104,10 +104,31 @@ void WebRTCDecoder::getRenderData()
         YangSynBuffer* sync_buffer = m_context->synMgr.session->playBuffer;
         int width = sync_buffer->width(sync_buffer->session);
         int height = sync_buffer->height(sync_buffer->session);
-        unsigned int* imageData = convertYUV420_NV21toRGB8888(t_vb, width , height);
+        //unsigned int* imageData = convertYUV420_NV21toRGB8888(t_vb, width , height);
         //QByteArray byteImage((const char*)image);
         //qDebug() << "receive data"<< byteImage.size();
-        QImage image((uchar*)imageData,width,height, QImage::Format_RGBA8888);
+        int ulndex = width * height;
+        int vlndex = ulndex + ((width * height) >> 2);
+        QImage image(width,height, QImage::Format_RGB888);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                //Y分量
+                double Y = (double)t_vb[y * width + x];
+                //U分量
+                double U = (double)t_vb[ulndex + (y / 2) * (width / 2) + (x / 2)] - 128;
+                //V分量
+                double V = (double)t_vb[vlndex + (y / 2) * (width / 2) + (x / 2)] - 128;
+                //转换公式
+                int R = (int)(Y + 1.13983 * V);
+                int G = (int)(Y - 0.39466 * U - 0.58060 * V);
+                int B = (int)(Y + 2.03211 * U);
+                R = qBound(0, R, 255);
+                G = qBound(0, G, 255);
+                B = qBound(0, B, 255);
+                QRgb rgbValue = qRgb(R, G, B);
+                image.setPixel(x, y, rgbValue);
+            }
+        }
         emit videoFrameDataReady(m_url, image);
         qDebug() << image.width();
         //delete t_vb;
