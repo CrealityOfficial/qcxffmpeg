@@ -113,14 +113,14 @@ void QMLPlayer::start(QString urlStr)
 #ifdef DEBUG_WEBRTC
     urlStr = "webrtc://172.23.208.238:8000/call/demo";
 #endif
-    if (urlStr.indexOf("webrtc") == 0)
+    if (urlStr.indexOf("webrtc_local") > 0)
     {
         if (!m_webrtc_decoder)
         {
             m_webrtc_decoder = new WebRTCDecoder();
             connect(m_webrtc_decoder, &WebRTCDecoder::videoFrameDataReady, this, &QMLPlayer::onVideoFrameDataReady);
         }
-        urlStr = urlStr.replace("webrtc", "http");
+        //urlStr = urlStr.replace("webrtc", "http");
         setUrl(urlStr);
         m_webrtc_decoder->startPlay(urlStr);
     }
