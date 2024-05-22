@@ -4,6 +4,7 @@
 #include <QThread>
 #include <QObject>
 #include <QImage>
+#include <QFuture> 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -26,9 +27,9 @@ class WebRTCDecoder : public QObject, public YangSysMessageI
     Q_OBJECT
 public:
     void stopplay();
-
     void startPlay(const QString& strUrl);
     WebRTCDecoder();
+    ~WebRTCDecoder();
     void success();
     void failure(int32_t errcode);
     bool isStop() { return m_isStop; }
@@ -46,6 +47,7 @@ private:
 protected:
     YangContext* m_context;
     QString m_url;
+    QFuture<void> m_playFutrue;
 };
 
 #endif // ! PLAYER_FFMPEG_WEBRTC_DECODER_H_

@@ -28,9 +28,14 @@ WebRTCDecoder::WebRTCDecoder()
     m_context->avinfo.audio.enableAudioFec = yangfalse; //srs not use audio fec
     m_player = YangPlayerHandle::createPlayerHandle(m_context, this);
 }
+WebRTCDecoder::~WebRTCDecoder()
+{
+    stopplay();
+}
 void WebRTCDecoder::stopplay()
 {
     m_isStop = true;
+    m_playFutrue.waitForFinished();
     if (m_player) m_player->stopPlay();
 }
 
@@ -42,14 +47,14 @@ void WebRTCDecoder::startPlay(const QString& strUrl)
     int32_t err = m_player->playRtc(0, m_url.toLatin1().data());
     if (!err)
     {
-        QtConcurrent::run([this]() {
+        m_playFutrue = QtConcurrent::run([this]() {
             //QThread::msleep(1000);
             while (!this->isStop())
             {
                 this->getRenderData();
                 QThread::msleep(2);
             }
-            
+            return;
             });
     }
 }
