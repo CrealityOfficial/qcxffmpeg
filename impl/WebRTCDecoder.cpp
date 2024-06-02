@@ -42,6 +42,7 @@ void WebRTCDecoder::stopplay()
 void WebRTCDecoder::startPlay(const QString& strUrl)
 {
     m_url = strUrl;
+    m_isStop = false;
     //QString url = "http://172.23.208.238:8000/call/demo";
     m_context->synMgr.session->playBuffer->resetVideoClock(m_context->synMgr.session->playBuffer->session);
     int32_t err = m_player->playRtc(0, m_url.toLatin1().data());
@@ -49,96 +50,57 @@ void WebRTCDecoder::startPlay(const QString& strUrl)
     {
         m_playFutrue = QtConcurrent::run([this]() {
             //QThread::msleep(1000);
+            bool bFirstFrame = true;
             while (!this->isStop())
             {
-                this->getRenderData();
-                QThread::msleep(2);
+                //this->getRenderData();
+                bool bValidFrame = this->receiveFrame();
+                if(bFirstFrame && bValidFrame)
+                {
+                    emit videoFrameInfo(this->width(),this->height(),this->format());
+                    bFirstFrame = false;
+                }
+                QThread::msleep(3);
             }
             return;
             });
     }
 }
-unsigned int convertYUVtoRGB(int y, int u, int v) {
-    int r, g, b;
 
-    r = y + (int)(1.402f * v);
-    g = y - (int)(0.344f * u + 0.714f * v);
-    b = y + (int)(1.772f * u);
 
-    r = r > 255 ? 255 : r < 0 ? 0 : r;
-    g = g > 255 ? 255 : g < 0 ? 0 : g;
-    b = b > 255 ? 255 : b < 0 ? 0 : b;
-    return 0xff000000 | (b << 16) | (g << 8) | r;
-}
-unsigned int* convertYUV420_NV21toRGB8888(unsigned char data[78080], int width, int height) {
-    int size = width * height;
-    int offset = size;
-    unsigned int* pixels = new unsigned int[size];
-    int u, v, y1, y2, y3, y4;
-
-    // i percorre os Y and the final pixels
-    // k percorre os pixles U e V
-    for (int i = 0, k = 0; i < size; i += 2, k += 2) {
-        y1 = data[i] & 0xff;
-        y2 = data[i + 1] & 0xff;
-        y3 = data[width + i] & 0xff;
-        y4 = data[width + i + 1] & 0xff;
-
-        u = data[offset + k] & 0xff;
-        v = data[offset + k + 1] & 0xff;
-        u = u - 128;
-        v = v - 128;
-
-        pixels[i] = convertYUVtoRGB(y1, u, v);
-        pixels[i + 1] = convertYUVtoRGB(y2, u, v);
-        pixels[width + i] = convertYUVtoRGB(y3, u, v);
-        pixels[width + i + 1] = convertYUVtoRGB(y4, u, v);
-
-        if (i != 0 && (i + 2) % width == 0)
-            i += width;
-    }
-
-    return pixels;
-}
-void WebRTCDecoder::getRenderData()
+int WebRTCDecoder::width() 
 {
-    uint8_t* t_vb = m_context->synMgr.session->playBuffer->getVideoRef(m_context->synMgr.session->playBuffer->session, &m_frame);
+    return m_width;
+}
+int WebRTCDecoder::height(){
+    return m_height;
+    }
+int WebRTCDecoder::format() {
+    return (int)QVideoFrame::Format_YUV420P;
+    }
+bool WebRTCDecoder::receiveFrame(){
+     uint8_t* t_vb = m_context->synMgr.session->playBuffer->getVideoRef(m_context->synMgr.session->playBuffer->session, &m_frame);
     if (t_vb)
     {
-        
         YangSynBuffer* sync_buffer = m_context->synMgr.session->playBuffer;
-        int width = sync_buffer->width(sync_buffer->session);
-        int height = sync_buffer->height(sync_buffer->session);
-        //unsigned int* imageData = convertYUV420_NV21toRGB8888(t_vb, width , height);
-        //QByteArray byteImage((const char*)image);
-        //qDebug() << "receive data"<< byteImage.size();
-        int ulndex = width * height;
-        int vlndex = ulndex + ((width * height) >> 2);
-        QImage image(width,height, QImage::Format_RGB888);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                //Y分量
-                double Y = (double)t_vb[y * width + x];
-                //U分量
-                double U = (double)t_vb[ulndex + (y / 2) * (width / 2) + (x / 2)] - 128;
-                //V分量
-                double V = (double)t_vb[vlndex + (y / 2) * (width / 2) + (x / 2)] - 128;
-                //转换公式
-                int R = (int)(Y + 1.13983 * V);
-                int G = (int)(Y - 0.39466 * U - 0.58060 * V);
-                int B = (int)(Y + 2.03211 * U);
-                R = qBound(0, R, 255);
-                G = qBound(0, G, 255);
-                B = qBound(0, B, 255);
-                QRgb rgbValue = qRgb(R, G, B);
-                image.setPixel(x, y, rgbValue);
-            }
+
+        m_width = sync_buffer->width(sync_buffer->session);
+        m_height = sync_buffer->height(sync_buffer->session);
+        if(m_width<=0)
+        {
+            return false;
         }
-        emit videoFrameDataReady(m_url, image);
-        qDebug() << image.width();
-        //delete t_vb;
-        
+        QVideoFrame f((int)m_frame.nb, QSize(m_width, m_height), m_width, QVideoFrame::Format_YUV420P);
+        if (f.map(QAbstractVideoBuffer::WriteOnly)) {
+            memcpy(f.bits(), t_vb, m_frame.nb);
+            f.setStartTime(0);
+            f.unmap();
+            emit newFrameAvailable(f);
+        }
+        return true;
     }
+    return false;
+    
 }
 void WebRTCDecoder::success()
 {

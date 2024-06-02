@@ -22,7 +22,8 @@ extern "C"
 #include <yangutil/sys/YangMath.h>
 
 }
-class WebRTCDecoder : public QObject, public YangSysMessageI
+#include "interface/cxffmpeg/framesource.h"
+class WebRTCDecoder :  public FrameSource,public YangSysMessageI
 {
     Q_OBJECT
 public:
@@ -33,8 +34,12 @@ public:
     void success();
     void failure(int32_t errcode);
     bool isStop() { return m_isStop; }
+    int width() override;
+    int height() override;
+    int format() override;
+    bool receiveFrame(); 
 signals:
-    void videoFrameDataReady(QString url, QImage data);
+    void videoFrameInfo(int width,int height,int format);
     void videoFrameDataFinish(QString url);
     void RtcConnectFailure(int errcode);
 private slots:
@@ -43,11 +48,12 @@ private:
     bool m_isStop = false;
     YangPlayerHandle* m_player;
     YangFrame m_frame;
-    void getRenderData();
 protected:
     YangContext* m_context;
     QString m_url;
     QFuture<void> m_playFutrue;
+    int m_width=1920;
+    int m_height=1080;
 };
 
 #endif // ! PLAYER_FFMPEG_WEBRTC_DECODER_H_

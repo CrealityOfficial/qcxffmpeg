@@ -4,16 +4,24 @@
 #include <QAudioOutput>
 #include "VideoDecoder.h"
 #include "WebRTCDecoder.h"
+#include "cxffmpeg/videoplayer.h"
 QMLPlayer::QMLPlayer(QQuickItem *parent)
     :QQuickPaintedItem(parent)
 {
     m_decoderController = new VideoDecoderController(this);
-    connect(m_decoderController, &VideoDecoderController::videoFrameDataReady, this, &QMLPlayer::onVideoFrameDataReady);
+    connect(m_decoderController, &VideoDecoderController::videoFrameInfo, this, &QMLPlayer::onVideoFrameInfo);
     connect(m_decoderController, &VideoDecoderController::videoFrameDataFinish, this, &QMLPlayer::onVideoFrameDataFinish);
     m_linkState = false;
     m_timer = new QTimer(this);
+    
+    
 }
-
+void QMLPlayer::setQmlEngine(QObject *engine)
+{
+    m_engine = qmlEngine(this);
+    if(m_player==nullptr)
+        m_player = new VideoPlayer(m_engine,this);
+    }
 QMLPlayer::~QMLPlayer()
 {
     if (m_decoderController)
@@ -29,64 +37,8 @@ QMLPlayer::~QMLPlayer()
 
 void QMLPlayer::paint(QPainter *painter)
 {
-    if (!m_image.isNull())
-    {
-        int imageH = m_image.height();
-        int imageW = m_image.width();
-        int screenH = this->height();
-        int screenW = this->width();
-
-        int scaledH = this->height();
-        int scaledW = this->width();
-
-        int offsetX = 0;
-        int offsetY = 0;
-
-        if (imageW > imageH)
-        {
-            scaledH = imageH * screenW / imageW;
-            if (scaledH > screenH)
-            {
-                scaledH = screenH;
-                scaledW = imageW * scaledH / imageH;
-
-                offsetX = (screenW - scaledW) / 2;
-                offsetY = 0;
-            }
-            else
-            {
-                offsetX = 0;
-                offsetY = (screenH - scaledH) / 2;
-            }
-        }
-        else
-        {
-            scaledW = imageW * scaledH / imageH;
-            if (scaledW > screenW)
-            {
-                scaledW = screenW;
-                scaledH = imageH * screenW / imageW;
-                offsetX = 0;
-                offsetY = (screenH - scaledH) / 2;
-            }
-            else
-            {
-                offsetX = (screenW - scaledW) / 2;
-                offsetY = 0;
-            }
-        }
-
-
-        QImage img = m_image.scaled(scaledW, scaledH);
-        painter->drawImage(QPoint(offsetX, offsetY), img);
-    }
-    else
-    {
-        m_image = QImage(this->width(), this->height(), QImage::Format_RGB888);
-        m_image.fill(QColor(0.0, 0.0, 0.0));
-        QImage img = m_image.scaled(this->width(), this->height());
-        painter->drawImage(QPoint(0, 0), img);
-    }
+    return;
+   
 }
 
 void QMLPlayer::rowVideoData(QImage data)
@@ -107,19 +59,21 @@ void QMLPlayer::setUrl(const QString &value)
 void QMLPlayer::start(QString urlStr)
 {
     
-    m_timer->setInterval(40);
-    connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
-    m_timer->start();
+    //m_timer->setInterval(40);
+    //connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
+    //m_timer->start();
 #ifdef DEBUG_WEBRTC
     urlStr = "webrtc://172.23.208.238:8000/call/demo";
 #endif
     if (urlStr.indexOf("webrtc_local") > 0)
     {
+        
         if (!m_webrtc_decoder)
         {
             m_webrtc_decoder = new WebRTCDecoder();
-            connect(m_webrtc_decoder, &WebRTCDecoder::videoFrameDataReady, this, &QMLPlayer::onVideoFrameDataReady);
+            connect(m_webrtc_decoder, &WebRTCDecoder::videoFrameInfo, this, &QMLPlayer::onVideoFrameInfo);
         }
+        
         //urlStr = urlStr.replace("webrtc", "http");
         setUrl(urlStr);
         m_webrtc_decoder->startPlay(urlStr);
@@ -127,6 +81,7 @@ void QMLPlayer::start(QString urlStr)
     else {
         setUrl(urlStr);
         m_decoderController->startThread(urlStr);
+        
     }
     
 }
@@ -143,17 +98,15 @@ void QMLPlayer::stop()
     //m_image = QImage();
 }
 
-void QMLPlayer::onVideoFrameDataReady(QString url, QImage data)
+void QMLPlayer::onVideoFrameInfo(int width,int height,int format)
 {
-    if (url != m_url)
+    if (m_url.indexOf("webrtc_local") > 0)
     {
-        return;
+        m_player->setSource(m_webrtc_decoder);
+    }else{
+        m_player->setSource(m_decoderController->findDecoder(m_url));
     }
-    //qDebug() << "onVideoFrameDataReady data.width:"<< width << " data.height:"<< height;
-    rowVideoData(data);
-    m_linkState = true;
-
-    emit sigVideoFrameDataReady();
+    
 }
 
 void QMLPlayer::onVideoFrameDataFinish()

@@ -6,6 +6,7 @@
 #include "cxffmpeg/interface.h"
 class WebRTCDecoder;
 class VideoDecoderController;
+class VideoPlayer;
 class PLAYER_FFMPEG_API QMLPlayer : public QQuickPaintedItem
 {
     Q_OBJECT
@@ -19,13 +20,14 @@ public:
     Q_INVOKABLE void start(QString urlStr);
     Q_INVOKABLE void stop();
     Q_INVOKABLE bool getLinkState();
+    Q_INVOKABLE void setQmlEngine(QObject *engine);
 
 private:
     void paint(QPainter *painter) override;
     void rowVideoData(QImage data);
 
 protected slots:
-    void onVideoFrameDataReady(QString url, QImage data);
+    void onVideoFrameInfo(int width,int height,int format);
     void onVideoFrameDataFinish();
 
 signals:
@@ -39,6 +41,8 @@ private:
 
     bool m_linkState;
     QTimer* m_timer = nullptr;
+    QQmlEngine* m_engine= nullptr;
+    VideoPlayer *m_player= nullptr;
 };
 
 #endif // QMLPLAYER_H

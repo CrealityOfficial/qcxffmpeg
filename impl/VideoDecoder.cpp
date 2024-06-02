@@ -2,12 +2,23 @@
 #include <QDebug>
 #include <QImage>
 #include <thread>
-
+#include <QVideoFrame>
 void VideoDecoder::stopplay()
 {
     isStop = true;
 }
-
+int VideoDecoder::width() {
+	return m_width;
+}
+int VideoDecoder::height() {
+		return m_height;
+	}
+int VideoDecoder::format() {
+	return (int)QVideoFrame::Format_YUV420P;
+	}
+void VideoDecoder::receiveFrame() {
+	
+	}
 void VideoDecoder::startPlay(const QString& strUrl)
 {
 	auto url = strUrl.toStdString();
@@ -35,7 +46,7 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	AVFrame* pFrameRGB = av_frame_alloc();
 	SwsContext* img_convert_ctx = NULL;
 	AVCodec* pVideoCodec = NULL;
-
+	uint8_t *m_buffer=nullptr;
 	if ((ret = avformat_open_input(&ifmt_ctx, url.c_str(), 0, &optionsDict)) < 0) {            // Open the input file for reading.
 		goto EXIT;
 	}
@@ -59,7 +70,7 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	if (-1 == video_st_index) {
 		goto EXIT;
 	}
-
+	bool bFirstFrame = true;
 	while (!isStop)
 	{
 		do {
@@ -113,44 +124,56 @@ void VideoDecoder::startPlay(const QString& strUrl)
 				{
 					return;
 				}
+				
 				if (ret == 0)
 				{
-					int bytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, pVideoCodecCtx->width, pVideoCodecCtx->height, 1);
-					buffer_rgb = (uint8_t*)av_malloc(bytes);
-					av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer_rgb, AV_PIX_FMT_RGB24, pVideoCodecCtx->width, pVideoCodecCtx->height, 1);
-					AVPixelFormat pixFormat;
-					switch (pVideoCodecCtx->pix_fmt) {
-					case AV_PIX_FMT_YUVJ420P:
-						pixFormat = AV_PIX_FMT_YUV420P;
-						break;
-					case AV_PIX_FMT_YUVJ422P:
-						pixFormat = AV_PIX_FMT_YUV422P;
-						break;
-					case AV_PIX_FMT_YUVJ444P:
-						pixFormat = AV_PIX_FMT_YUV444P;
-						break;
-					case AV_PIX_FMT_YUVJ440P:
-						pixFormat = AV_PIX_FMT_YUV440P;
-						break;
-					default:
-						pixFormat = pVideoCodecCtx->pix_fmt;
-						break;
-					}
-					img_convert_ctx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height, pixFormat,
-						pVideoCodecCtx->width, pVideoCodecCtx->height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, NULL, NULL, NULL);
-					if (img_convert_ctx == NULL)
+					m_width = pVideoCodecCtx->width;
+					m_height = pVideoCodecCtx->height;
+					
+					if(bFirstFrame && m_width>0)
 					{
-						return;
+						QVideoFrame::PixelFormat pixFormat = QVideoFrame::Format_YUV420P;
+						switch (pVideoCodecCtx->pix_fmt) {
+							case AV_PIX_FMT_YUVJ420P:
+								pixFormat = QVideoFrame::Format_YUV420P;
+								break;
+							case AV_PIX_FMT_YUVJ422P:
+								pixFormat = QVideoFrame::Format_YUV422P;
+								break;
+							case AV_PIX_FMT_YUVJ444P:
+								pixFormat = QVideoFrame::Format_YUV444;
+								break;
+							default:
+								pixFormat = QVideoFrame::Format_YUV420P;
+								break;
+						}
+						emit videoFrameInfo(m_width,m_height,(int)pixFormat);
+						bFirstFrame = false;
 					}
-					sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0, pVideoCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
-
-					QImage img(buffer_rgb, pVideoCodecCtx->width, pVideoCodecCtx->height, QImage::Format_RGB888, [](void* data) {
-						av_free(data);
-						}, buffer_rgb);
-					emit videoFrameDataReady(strUrl, img);
-
-					sws_freeContext(img_convert_ctx);
-					//av_free(buffer_rgb);
+					int32_t bitLen=1;
+					int yLen = m_width * m_height*bitLen;
+					int uLen = yLen / 4;
+					int allLen = yLen * 3 / 2;
+					if(m_buffer==nullptr)
+						m_buffer=new uint8_t[m_width*m_height*3/2];
+					for (int i = 0; i < m_height; i++) {
+						memcpy(m_buffer + i * m_width, pFrame->data[0] + i * pFrame->linesize[0], m_width);
+					}
+					for (int i = 0; i < m_height / 2; i++) {
+						memcpy(m_buffer + yLen+i * m_width / 2,pFrame->data[1] + i * pFrame->linesize[1], m_width / 2);
+					}
+					for (int i = 0; i < m_height / 2; i++) {
+						memcpy(m_buffer + yLen+ uLen+ i * m_width / 2, pFrame->data[2] + i * pFrame->linesize[2], m_width / 2);
+					}
+					int m_bufLen= allLen;
+					QVideoFrame f(m_bufLen, QSize(pVideoCodecCtx->width, pVideoCodecCtx->height), pVideoCodecCtx->width, QVideoFrame::Format_YUV420P);
+					if (f.map(QAbstractVideoBuffer::WriteOnly)) {
+						memcpy(f.bits(), m_buffer,m_bufLen);
+						f.setStartTime(0);
+						f.unmap();
+						emit newFrameAvailable(f);
+					}
+					
 				}
 			}
 
@@ -176,7 +199,8 @@ EXIT:
 		avformat_close_input(&ifmt_ctx);
 		ifmt_ctx = NULL;
 	}
-
+	delete m_buffer;
+	m_buffer = nullptr;
 	emit videoFrameDataFinish(strUrl);
 	return;
 }
@@ -201,12 +225,12 @@ void VideoDecoderController::startThread(const QString& serverAddress)
 		return;
 	}
 	VideoDecoder* decoder = new VideoDecoder;
-
-	connect(decoder, &VideoDecoder::videoFrameDataReady, this, &VideoDecoderController::onVideoFrameDataReady);
+	m_decoders[serverAddress] = decoder;
+	connect(decoder, &VideoDecoder::videoFrameInfo, this, &VideoDecoderController::onVideoFrameInfo);
 	connect(decoder, &VideoDecoder::videoFrameDataFinish, this, &VideoDecoderController::videoFrameDataFinish);
     auto t = std::thread(&VideoDecoder::startPlay, decoder, serverAddress);
     t.detach();
-	m_decoders[serverAddress] = decoder;
+
 }
 
 void VideoDecoderController::stopThread()
@@ -217,9 +241,9 @@ void VideoDecoderController::stopThread()
 	}
 }
 
-void VideoDecoderController::onVideoFrameDataReady(QString url, QImage data)
+void VideoDecoderController::onVideoFrameInfo(int width,int height,int format)
 {
-    emit videoFrameDataReady(url, data);
+    emit videoFrameInfo(width, height,format);
 }
 
 void VideoDecoderController::videoFrameDataFinish(QString url)

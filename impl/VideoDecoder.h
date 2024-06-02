@@ -18,17 +18,20 @@ extern "C"
 #include <QThread>
 #include <QObject>
 #include <QImage>
-
-class VideoDecoder : public QObject
+#include "interface/cxffmpeg/framesource.h"
+class VideoDecoder : public FrameSource
 {
     Q_OBJECT
 public:
     void stopplay();
 
     void startPlay(const QString& strUrl);
-    
+    int width() override;
+    int height() override;
+    int format() override;
+    void receiveFrame(); 
 signals:
-    void videoFrameDataReady(QString url, QImage data);
+    void videoFrameInfo(int width,int height,int format);
     void videoFrameDataFinish(QString url);
 
 private:
@@ -40,7 +43,7 @@ private:
     int m_videoStreamIndex = 0;
 
     AVPixelFormat m_pixFmt;
-    int m_width, m_height;
+    int m_width=1280, m_height=720;
     bool isStop = false;
 };
 
@@ -53,14 +56,13 @@ public:
 
     void startThread(const QString& serverAddress);
     void stopThread();
+    VideoDecoder* findDecoder(const QString& serverAddress) { return m_decoders[serverAddress];}
 
 signals:
-
-    void videoFrameDataReady(QString url, QImage data);
-
+    void videoFrameInfo(int width,int height,int format);
 public slots:
     void videoFrameDataFinish(QString url);
-    void onVideoFrameDataReady(QString url, QImage data);
+    void onVideoFrameInfo(int width,int height,int format);
 
 private:
     std::map<QString, VideoDecoder*> m_decoders;
