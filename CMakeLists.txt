@@ -29,9 +29,9 @@ set(SRCS interface/cxffmpeg/interface.h
 set(DEFS PLAYER_FFMPEG_DLL WIN32_LEAN_AND_MEAN)
 list(APPEND DEFS _GLIBCXX_USE_NANOSLEEP)
 set(INCS ${CMAKE_CURRENT_SOURCE_DIR}/impl/ ${CMAKE_CURRENT_SOURCE_DIR}/interface)
-set(LIBS Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Quick Qt5::Qml Qt5::Multimedia Qt5::Concurrent avutil avcodec avformat swscale swresample yangwincodec6 metartc6 metartccore6  srtp2 usrsctp opus speexdsp ssl crypto)
+set(LIBS Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Quick Qt5::Qml Qt5::Multimedia Qt5::Concurrent avutil avcodec avformat swscale swresample  metartc6 metartccore6  srtp2 usrsctp opus speexdsp ssl crypto)
 if(CC_BC_WIN)
-	list(APPEND LIBS Ws2_32 Avrt)
+	list(APPEND LIBS Ws2_32 Avrt yangwincodec6)
 endif()
 find_package(Qt5 COMPONENTS Multimedia REQUIRED)
 __add_real_target(qcxffmpeg dll SOURCE ${SRCS}

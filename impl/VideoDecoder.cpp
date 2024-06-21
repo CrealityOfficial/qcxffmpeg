@@ -47,6 +47,8 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	SwsContext* img_convert_ctx = NULL;
 	AVCodec* pVideoCodec = NULL;
 	uint8_t *m_buffer=nullptr;
+	QVideoFrame::PixelFormat pixFormat;
+	bool bFirstFrame = true;
 	if ((ret = avformat_open_input(&ifmt_ctx, url.c_str(), 0, &optionsDict)) < 0) {            // Open the input file for reading.
 		goto EXIT;
 	}
@@ -70,7 +72,7 @@ void VideoDecoder::startPlay(const QString& strUrl)
 	if (-1 == video_st_index) {
 		goto EXIT;
 	}
-	bool bFirstFrame = true;
+	
 	while (!isStop)
 	{
 		do {
@@ -132,7 +134,7 @@ void VideoDecoder::startPlay(const QString& strUrl)
 					
 					if(bFirstFrame && m_width>0)
 					{
-						QVideoFrame::PixelFormat pixFormat = QVideoFrame::Format_YUV420P;
+						pixFormat = QVideoFrame::Format_YUV420P;
 						switch (pVideoCodecCtx->pix_fmt) {
 							case AV_PIX_FMT_YUVJ420P:
 								pixFormat = QVideoFrame::Format_YUV420P;
