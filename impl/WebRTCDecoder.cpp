@@ -5,7 +5,7 @@
 #include <thread>
 #include <QtConcurrent>
 #include <yangstream/YangSynBuffer.h>
-
+WebRTCDecoder* WebRTCDecoder::g_pSingleton = new (std::nothrow) WebRTCDecoder();
 WebRTCDecoder::WebRTCDecoder()
 {
     m_context = new YangContext();
@@ -30,17 +30,33 @@ WebRTCDecoder::WebRTCDecoder()
 }
 WebRTCDecoder::~WebRTCDecoder()
 {
-    stopplay();
+    //stopplay();
+}
+WebRTCDecoder* WebRTCDecoder::GetInstance()
+{
+    return g_pSingleton;
 }
 void WebRTCDecoder::stopplay()
 {
     m_isStop = true;
     m_playFutrue.waitForFinished();
+    while(m_status == CONNECTTING)
+    {
+        QThread::msleep(20);
+        }
     if (m_player) m_player->stopPlay();
+
+    qDebug()<<"hemiao:stopplay";
 }
 
 void WebRTCDecoder::startPlay(const QString& strUrl)
 {
+    qDebug()<<"hemiao:startplay";
+    while(m_status == CONNECTTING)
+    {
+        QThread::msleep(20);
+        }
+    m_status = CONNECTTING;
     m_url = strUrl;
     m_isStop = false;
     //QString url = "http://172.23.208.238:8000/call/demo";
@@ -104,10 +120,12 @@ bool WebRTCDecoder::receiveFrame(){
 }
 void WebRTCDecoder::success()
 {
-   
+    m_status = CONNECTED;
+   qDebug()<<"success";
 }
 void WebRTCDecoder::failure(int32_t errcode)
 {
+    m_status = STOPPED;
     emit RtcConnectFailure(errcode);
 }
 void WebRTCDecoder::connectFailure(int errcode) {

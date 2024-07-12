@@ -30,7 +30,7 @@ QMLPlayer::~QMLPlayer()
     }
     if (m_webrtc_decoder)
     {
-        delete m_webrtc_decoder;
+        //delete m_webrtc_decoder;
     }
     m_timer->stop();
 }
@@ -70,7 +70,7 @@ void QMLPlayer::start(QString urlStr)
         
         if (!m_webrtc_decoder)
         {
-            m_webrtc_decoder = new WebRTCDecoder();
+            m_webrtc_decoder = WebRTCDecoder::GetInstance();
             connect(m_webrtc_decoder, &WebRTCDecoder::videoFrameInfo, this, &QMLPlayer::onVideoFrameInfo);
         }
         

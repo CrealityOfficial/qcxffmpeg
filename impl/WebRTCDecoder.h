@@ -25,8 +25,14 @@ extern "C"
 #include "interface/cxffmpeg/framesource.h"
 class WebRTCDecoder :  public FrameSource,public YangSysMessageI
 {
+    enum Status {
+    STOPPED = 1,
+    CONNECTTING = 2,
+    CONNECTED = 3
+    };
     Q_OBJECT
 public:
+    static WebRTCDecoder* GetInstance();
     void stopplay();
     void startPlay(const QString& strUrl);
     WebRTCDecoder();
@@ -46,8 +52,10 @@ private slots:
     void connectFailure(int errcode);
 private:
     bool m_isStop = false;
+    Status m_status = STOPPED;
     YangPlayerHandle* m_player;
     YangFrame m_frame;
+    static WebRTCDecoder *g_pSingleton;
 protected:
     YangContext* m_context;
     QString m_url;
