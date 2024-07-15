@@ -8,24 +8,24 @@
 #include <yangutil/sys/YangLog.h>
 
 YangPlayerPlay::YangPlayerPlay() {
-	m_audioPlay=NULL;
-	vm_audio_player_start=0;
+	//m_audioPlay=NULL;
+	//vm_audio_player_start=0;
 }
 
 YangPlayerPlay::~YangPlayerPlay() {
-    yang_stop(m_audioPlay);
-    yang_stop_thread(m_audioPlay);
+    //yang_stop(m_audioPlay);
+    //yang_stop_thread(m_audioPlay);
 
 }
 void YangPlayerPlay::stopAll(){
-	if(m_audioPlay)	m_audioPlay->stop();
+	//if(m_audioPlay)	m_audioPlay->stop();
 
 }
 void YangPlayerPlay::initAudioPlay(YangContext* paudio){
 
 	if (m_audioPlay == NULL) {
 #ifdef _WIN32
-    m_audioPlay = new YangWinAudioApiRender(&paudio->avinfo,&paudio->synMgr);
+    //m_audioPlay = new YangWinAudioApiRender(&paudio->avinfo,&paudio->synMgr);
 #else
 #ifdef __ANDROID__
     m_audioPlay = new YangAudioPlayAndroid(&paudio->avinfo,&paudio->synMgr);
@@ -33,7 +33,7 @@ void YangPlayerPlay::initAudioPlay(YangContext* paudio){
 		m_audioPlay = new YangAudioPlayLinux(&paudio->avinfo,&paudio->synMgr);
 #endif
 #endif
-		m_audioPlay->init();
+		//m_audioPlay->init();
 
 	}
 
@@ -41,12 +41,12 @@ void YangPlayerPlay::initAudioPlay(YangContext* paudio){
 
 void YangPlayerPlay::startAudioPlay(){
 
-	if(vm_audio_player_start) return;
+	//if(vm_audio_player_start) return;
 
-	m_audioPlay->start();
-	vm_audio_player_start=1;
+	//m_audioPlay->start();
+	//vm_audio_player_start=1;
 }
 void YangPlayerPlay::setInAudioList(YangAudioPlayBuffer *paudioList){
-	if(m_audioPlay!=NULL) m_audioPlay->setAudioBuffer(paudioList);
+	//if(m_audioPlay!=NULL) m_audioPlay->setAudioBuffer(paudioList);
 }
 
