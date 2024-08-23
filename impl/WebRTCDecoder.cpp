@@ -40,10 +40,16 @@ void WebRTCDecoder::stopplay()
 {
     m_isStop = true;
     m_playFutrue.waitForFinished();
+    int waitCount = 100;
     while(m_status == CONNECTTING)
     {
         QThread::msleep(20);
+        waitCount--;
+        if(waitCount<=0)
+        {
+            break;
         }
+    }
     if (m_player) m_player->stopPlay();
 
     qDebug()<<"hemiao:stopplay";
@@ -52,9 +58,15 @@ void WebRTCDecoder::stopplay()
 void WebRTCDecoder::startPlay(const QString& strUrl)
 {
     qDebug()<<"hemiao:startplay";
+    int waitCount = 100;
     while(m_status == CONNECTTING)
     {
         QThread::msleep(20);
+        waitCount--;
+        if(waitCount<=0)
+        {
+            break;
+        }
         }
     m_status = CONNECTTING;
     m_url = strUrl;
