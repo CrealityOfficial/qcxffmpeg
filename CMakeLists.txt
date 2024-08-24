@@ -9,7 +9,7 @@ endif()
 __cc_find(openssl)
 set(SRCS interface/cxffmpeg/interface.h
 		 interface/cxffmpeg/qmlplayer.h
-		 interface/cxffmpeg/videoPlayer.h
+		 interface/cxffmpeg/videoplayer.h
 		 interface/cxffmpeg/frameprovider.h
 		 interface/cxffmpeg/framesource.h
 		 impl/qmlplayer.cpp
